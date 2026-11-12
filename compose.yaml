@@ -1,0 +1,21 @@
+services:
+  foodstash:
+    image: ghcr.io/lela810/foodstash:${FOODSTASH_VERSION:-0.1.0}
+    build:
+      context: .
+    ports:
+      - "${FOODSTASH_BIND:-127.0.0.1}:8080:8080"
+    volumes:
+      - inventory:/data
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+
+volumes:
+  inventory:

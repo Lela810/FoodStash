@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#165b46">
+  <title>FoodStash - Your cellar, in order</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/"><span class="brand-mark">F</span>FoodStash<span class="brand-dot">.</span></a>
+    <p class="sidebar-caption">A LITTLE ORDER. LESS WASTE.</p>
+    <nav aria-label="Main navigation">
+      <button class="nav-button active" id="nav-inventory" aria-current="page"><span aria-hidden="true">&#9638;</span> My reserves</button>
+      <button class="nav-button" id="nav-add"><span aria-hidden="true">+</span> Scan &amp; add</button>
+    </nav>
+    <div class="sidebar-note"><span class="leaf" aria-hidden="true">&#10043;</span><strong>Good food deserves<br>a good home.</strong><p>Keep track of what you have.<br>Make the most of every shelf.</p></div>
+    <footer><span class="status-dot"></span> Your cellar companion <span id="version"></span></footer>
+  </aside>
+  <main>
+    <header class="page-header"><div><p class="eyebrow">YOUR PERSONAL PANTRY</p><h1>Your cellar, in order<span>.</span></h1><p class="subtitle">Know what's in stock. Enjoy it before it's gone.</p></div><div class="header-actions"><button id="tablet-mode" class="secondary" aria-pressed="false">Tablet mode</button><button id="open-add" class="primary"><span aria-hidden="true">+</span> Add to reserves</button></div></header>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <p class="tablet-only scanner-ready">Scanner ready. Scan to add or remove stock. New products open the add form automatically.</p>
+    <section class="stats" aria-label="Inventory summary">
+      <article><span class="stat-icon green" aria-hidden="true">&#9638;</span><div><p>Items in reserve</p><strong id="stat-total">-</strong><small>across <span id="stat-batches">-</span> batches</small></div></article>
+      <article><span class="stat-icon amber" aria-hidden="true">&#9684;</span><div><p>Use soon</p><strong id="stat-soon">-</strong><small>within the next 7 days</small></div></article>
+      <article><span class="stat-icon rose" aria-hidden="true">&#9888;</span><div><p>Past expiry</p><strong id="stat-expired">-</strong><small>time to check the label</small></div></article>
+    </section>
+    <section class="inventory-panel" aria-labelledby="inventory-title">
+      <div class="panel-top"><div><h2 id="inventory-title">On your shelves</h2><p>A little overview of everything tucked away.</p></div><span id="sync-status" role="status">Connecting...</span></div>
+      <div class="toolbar"><div class="filters" role="group" aria-label="Expiry filter"><button class="filter active" data-filter="all" aria-pressed="true">All reserves</button><button class="filter" data-filter="soon" aria-pressed="false">Use soon</button><button class="filter" data-filter="expired" aria-pressed="false">Past expiry</button></div><label class="search"><span class="sr-only">Search name, barcode or location</span><input id="search" type="search" placeholder="Search your shelves..." autocomplete="off"></label></div>
+      <div id="inventory" class="inventory-list" aria-live="polite"><div class="empty"><h3>Loading your shelves...</h3></div></div>
+      <div class="panel-bottom"><span id="result-count"></span><span>Sorted by expiry &middot; first in, first out</span></div>
+    </section>
+    <p class="bottom-note"><span aria-hidden="true">&#10043;</span> A well-stocked cellar. A little less food waste.</p>
+  </main>
+  <dialog id="scan-dialog" aria-labelledby="scan-title">
+    <div class="scan-choice">
+      <h2 id="scan-title">Product in storage</h2>
+      <div id="scan-image" class="photo-frame"></div>
+      <a id="scan-photo-source" target="_blank" rel="noopener noreferrer" hidden>Photo: Open Food Facts (CC BY-SA)</a>
+      <p id="scan-summary"></p>
+      <p id="scan-batch"></p>
+      <p id="scan-error" class="form-error" role="alert" hidden></p>
+      <div class="scan-choice-actions"><button id="scan-add" class="primary">Add stock</button><button id="scan-remove" class="primary">Remove 1</button><button id="scan-cancel" class="secondary">Cancel</button></div>
+    </div>
+  </dialog>
+  <dialog id="item-dialog" aria-labelledby="dialog-title">
+    <form id="item-form">
+      <div class="dialog-header"><div><p class="eyebrow">MAKE ROOM FOR SOMETHING GOOD</p><h2 id="dialog-title">Add to your reserves</h2></div><button type="button" class="icon-button" id="close-dialog" aria-label="Close dialog">&times;</button></div>
+      <div class="scan-box"><label for="barcode">Scan a barcode</label><div class="input-action"><input id="barcode" name="barcode" inputmode="numeric" pattern="[0-9]{4,32}" maxlength="32" autocomplete="off" placeholder="Scan or type the barcode"><button type="button" id="lookup" class="primary">Look up</button></div><p id="lookup-status" role="status">Use a USB / Bluetooth scanner, or enter a product manually below.</p></div>
+      <button type="button" id="desktop-setup" class="secondary" hidden>Set up product in desktop mode</button>
+      <button type="button" id="retry-lookup" class="secondary" hidden>Retry lookup</button>
+      <div id="product-photo" class="product-photo" hidden><div id="lookup-image" class="photo-frame"></div><a id="photo-source" target="_blank" rel="noopener noreferrer">Photo: Open Food Facts contributors (CC BY-SA)</a></div>
+      <input id="image_url" name="image_url" type="hidden" value="" hidden>
+      <label for="name">Product name <span class="required">*</span></label><input id="name" name="name" required maxlength="160" placeholder="e.g. Chopped tomatoes">
+      <div class="form-row"><div><label for="expires_on">Expiry date <span class="required">*</span></label><input type="date" id="expires_on" name="expires_on" required><div class="date-shortcuts"><button type="button" data-days="1">Tomorrow</button><button type="button" data-days="7">+1 week</button><button type="button" data-days="30">+30 days</button></div></div><div class="quantity-field"><label for="quantity">Quantity <span class="required">*</span></label><div class="stepper"><button type="button" id="quantity-minus" aria-label="Decrease quantity">-</button><input id="quantity" name="quantity" type="number" min="1" max="9999" step="1" value="1" required><button type="button" id="quantity-plus" aria-label="Increase quantity">+</button></div></div></div>
+      <label class="typing-only" for="location">Shelf or location <span class="optional">optional</span></label><input class="typing-only" id="location" name="location" maxlength="80" placeholder="e.g. Cellar, shelf 2">
+      <label class="typing-only" for="notes">Notes <span class="optional">optional</span></label><textarea class="typing-only" id="notes" name="notes" maxlength="500" rows="2" placeholder="Anything worth remembering"></textarea>
+      <p class="form-hint">Each addition is a separate batch, so different expiry dates stay separate.</p>
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button type="button" id="cancel" class="secondary">Cancel</button><button type="submit" id="save" class="primary">Save to reserves</button></div>
+    </form>
+  </dialog>
+  <template id="item-template"><article class="inventory-item"><div class="product-icon" aria-hidden="true"></div><div class="product-info"><h3></h3><p class="product-meta"></p><p class="product-notes"></p></div><div class="expiry"><span class="badge"></span><small></small></div><div class="stock"><strong></strong><small>in stock</small></div><div class="item-actions"><button class="consume secondary">Use 1</button><button class="edit secondary">Edit</button><button class="delete icon-button" aria-label="Delete batch" title="Delete batch">&times;</button></div></article></template>
+</body>
+</html>

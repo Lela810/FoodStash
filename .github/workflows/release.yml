@@ -1,0 +1,78 @@
+name: Release container
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foodstash-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      image: ${{ steps.version.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate release tag and documentation
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python scripts/check_release.py --tag "$RELEASE_TAG"
+      - run: python -m unittest discover -s tests -v
+      - run: node --check static/app.js
+      - run: node tests/test_tablet.cjs
+      - run: docker compose config --quiet
+      - id: version
+        name: Export validated image metadata
+        shell: bash
+        run: |
+          echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+          echo "image=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Reject reused release versions
+        env:
+          IMAGE: ${{ needs.validate.outputs.image }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/check_image_absent.py
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/${{ needs.validate.outputs.image }}:${{ needs.validate.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=FoodStash
+            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
